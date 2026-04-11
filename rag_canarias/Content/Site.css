@@ -1,20 +1,237 @@
-﻿/* Set padding to keep content from hitting the edges */
+/* ============================================================
+   Layout
+   ============================================================ */
 .body-content {
     margin-top: 15px;
     padding-left: 15px;
     padding-right: 15px;
 }
 
-/* Override the default bootstrap behavior where horizontal description lists 
-   will truncate terms that are too long to fit in the left column 
-*/
 .dl-horizontal dt {
     white-space: normal;
 }
 
-/* Set width on the form input elements since they're 100% wide by default */
 input,
 select,
 textarea {
     max-width: 280px;
+}
+
+/* ============================================================
+   Design tokens – light (default)
+   ============================================================ */
+:root {
+    --bg:          #ffffff;
+    --bg-soft:     #f8f9fa;
+    --text:        #212529;
+    --text-muted:  #6c757d;
+    --border:      #dee2e6;
+    --card-bg:     #ffffff;
+    --input-bg:    #ffffff;
+    --navbar-bg:   #212529;   /* Bootstrap bg-dark */
+    --link:        #0d6efd;
+    --footer-text: #6c757d;
+}
+
+/* ============================================================
+   Design tokens – dark
+   Applied to <html> so the class is set before <body> renders
+   (avoids flash on page load).
+   ============================================================ */
+html.dark-mode {
+    --bg:          #121212;
+    --bg-soft:     #1e1e1e;
+    --text:        #e0e0e0;
+    --text-muted:  #9e9e9e;
+    --border:      #3a3a3a;
+    --card-bg:     #1c1c1c;
+    --input-bg:    #252525;
+    --navbar-bg:   #1a1a1a;
+    --link:        #66b2ff;
+    --footer-text: #9e9e9e;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+html.dark-mode,
+html.dark-mode body {
+    background-color: var(--bg);
+    color: var(--text);
+}
+
+/* ============================================================
+   Navbar
+   html.dark-mode + element specificity beats Bootstrap's
+   .navbar.bg-dark without requiring !important
+   ============================================================ */
+html.dark-mode .navbar.bg-dark,
+html.dark-mode .navbar {
+    background-color: var(--navbar-bg) !important;
+}
+
+html.dark-mode .navbar-brand,
+html.dark-mode .nav-link {
+    color: var(--text) !important;
+}
+
+/* ============================================================
+   Links
+   ============================================================ */
+html.dark-mode a {
+    color: var(--link);
+}
+
+html.dark-mode a:hover {
+    color: color-mix(in srgb, var(--link) 80%, #fff);
+}
+
+/* ============================================================
+   Bootstrap bg-* overrides
+   ============================================================ */
+html.dark-mode .bg-white,
+html.dark-mode .bg-light {
+    background-color: var(--bg-soft) !important;
+    color: var(--text) !important;
+}
+
+html.dark-mode .bg-dark {
+    background-color: var(--navbar-bg) !important;
+}
+
+/* ============================================================
+   Cards  (.card, .card-header, .card-body, .card-footer)
+   ============================================================ */
+html.dark-mode .card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+}
+
+html.dark-mode .card-header,
+html.dark-mode .card-footer {
+    background-color: var(--bg-soft) !important;
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+}
+
+html.dark-mode .card-body {
+    color: var(--text) !important;
+}
+
+/* ============================================================
+   Forms
+   ============================================================ */
+html.dark-mode .form-control,
+html.dark-mode .form-select,
+html.dark-mode input:not([type=checkbox]):not([type=radio]),
+html.dark-mode select,
+html.dark-mode textarea {
+    background-color: var(--input-bg) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+html.dark-mode .form-control::placeholder,
+html.dark-mode input::placeholder,
+html.dark-mode textarea::placeholder {
+    color: var(--text-muted);
+}
+
+/* ============================================================
+   Tables
+   ============================================================ */
+html.dark-mode .table {
+    --bs-table-bg: var(--bg);
+    --bs-table-color: var(--text);
+    --bs-table-border-color: var(--border);
+    --bs-table-striped-bg: var(--bg-soft);
+    --bs-table-hover-bg: var(--bg-soft);
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+html.dark-mode .table thead th {
+    background-color: var(--bg-soft) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+/* ============================================================
+   Dropdowns
+   ============================================================ */
+html.dark-mode .dropdown-menu {
+    background-color: var(--bg-soft) !important;
+    border-color: var(--border) !important;
+}
+
+html.dark-mode .dropdown-item {
+    color: var(--text) !important;
+}
+
+html.dark-mode .dropdown-item:hover,
+html.dark-mode .dropdown-item:focus {
+    background-color: var(--bg) !important;
+    color: var(--text) !important;
+}
+
+/* ============================================================
+   Modals
+   ============================================================ */
+html.dark-mode .modal-content {
+    background-color: var(--bg-soft) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+html.dark-mode .modal-header,
+html.dark-mode .modal-footer {
+    border-color: var(--border) !important;
+}
+
+/* ============================================================
+   Alerts & Badges
+   ============================================================ */
+html.dark-mode .alert {
+    color: var(--text) !important;
+}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+html.dark-mode footer p {
+    color: var(--footer-text);
+}
+
+html.dark-mode hr {
+    border-color: var(--border);
+}
+
+/* ============================================================
+   Dark-mode toggle button
+   ============================================================ */
+#dark-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    line-height: 1;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+#dark-mode-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+#dm-icon {
+    font-size: 16px;
+    line-height: 1;
 }

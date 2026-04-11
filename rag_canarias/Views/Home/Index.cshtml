@@ -4,8 +4,26 @@
 
 <h2>Crawler Patrimonio Canarias</h2>
 
-<p>Procesar webs semilla iniciales del TFG.</p>
+<p>Procesar una URL o las webs semilla iniciales del TFG.</p>
 
 <form method="post" action="/Home/Crawl">
-    <button type="submit">Iniciar crawling</button>
+    <div>
+        <label for="url">URL (opcional):</label>
+        <input type="text" id="url" name="url" style="width:400px;" />
+    </div>
+    <div>
+        <label for="maxPages">MaxPages:</label>
+        <input type="number" id="maxPages" name="maxPages" value="50" min="1" />
+    </div>
+    <div>
+        <label for="maxDepth">MaxDepth:</label>
+        <input type="number" id="maxDepth" name="maxDepth" value="2" min="0" />
+    </div>
+    <div>
+        <label for="fullCrawl">FullCrawl (permitir hasta 1000 páginas):</label>
+        <input type="checkbox" id="fullCrawl" name="fullCrawl" value="true" />
+    </div>
+    <div>
+        <button type="submit">Iniciar crawling</button>
+    </div>
 </form>

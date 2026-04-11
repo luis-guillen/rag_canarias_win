@@ -23,7 +23,7 @@ namespace rag_canarias.Controllers
         }
 
         [HttpPost]
-        public ActionResult Crawl()
+        public ActionResult Crawl(string url, int maxPages = 50, int maxDepth = 2, bool fullCrawl = false)
         {
             var seeds = new List<string>
             {
@@ -34,9 +34,19 @@ namespace rag_canarias.Controllers
                 "https://izuran.blogspot.com/",
                 "https://www.academiacanarialengua.org/diccionario/"
             };
+            // Validar y aplicar parámetros
+            if (!string.IsNullOrWhiteSpace(url))
+            {
+                // Si se envía una URL desde la UI, usarla como única semilla
+                seeds = new List<string> { url };
+            }
 
-            // Sin límite: rastrear todas las páginas encontradas en el dominio
-            int maxPaginasPorSitio = int.MaxValue;
+            // Asegurar valores mínimos
+            maxPages = Math.Max(1, maxPages);
+            maxDepth = Math.Max(0, maxDepth);
+
+            // Si FullCrawl está activo, permitimos hasta 1000 páginas como tope
+            int maxPaginasPorSitio = fullCrawl ? Math.Min(maxPages, 1000) : maxPages;
             string carpetaBaseGlobal = @"C:\temp\crawler";
 
             Directory.CreateDirectory(carpetaBaseGlobal);
@@ -57,7 +67,7 @@ namespace rag_canarias.Controllers
                     string carpetaSitio = Path.Combine(carpetaBaseGlobal, nombreCarpeta);
                     Directory.CreateDirectory(carpetaSitio);
 
-                    int total = CrawlDomain(startUri, maxPaginasPorSitio, carpetaSitio);
+                    int total = CrawlDomain(startUri, maxPaginasPorSitio, maxDepth, carpetaSitio);
 
                     resultados.Add($"{startUri.Host} -> {total} páginas guardadas en {carpetaSitio}");
                 }
@@ -71,11 +81,11 @@ namespace rag_canarias.Controllers
             return View("Resultados");
         }
 
-        private int CrawlDomain(Uri startUri, int maxPaginas, string carpetaBase)
+        private int CrawlDomain(Uri startUri, int maxPaginas, int maxDepth, string carpetaBase)
         {
             var visitadas = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var cola = new Queue<Uri>();
-            cola.Enqueue(startUri);
+            var cola = new Queue<Tuple<Uri, int>>(); // Uri + depth
+            cola.Enqueue(Tuple.Create(startUri, 0));
 
             int contador = 0;
 
@@ -86,7 +96,10 @@ namespace rag_canarias.Controllers
 
                 while (cola.Count > 0 && contador < maxPaginas)
                 {
-                    var currentUri = cola.Dequeue();
+                    var item = cola.Dequeue();
+                    var currentUri = item.Item1;
+                    int depth = item.Item2;
+
                     string currentUrl = NormalizarUrl(currentUri);
 
                     if (visitadas.Contains(currentUrl))
@@ -101,6 +114,8 @@ namespace rag_canarias.Controllers
                     }
                     catch
                     {
+                        // pequeña espera para no sobrecargar en fallos
+                        System.Threading.Thread.Sleep(300);
                         continue;
                     }
 
@@ -115,15 +130,21 @@ namespace rag_canarias.Controllers
                     System.IO.File.WriteAllText(rutaArchivo, textoLimpio, Encoding.UTF8);
                     contador++;
 
-                    var enlaces = ExtraerEnlacesInternos(html, currentUri, startUri.Host);
+                    // Añadir delay entre peticiones (politeness)
+                    System.Threading.Thread.Sleep(300);
 
-                    foreach (var enlace in enlaces)
+                    if (depth < maxDepth)
                     {
-                        string enlaceNormalizado = NormalizarUrl(enlace);
+                        var enlaces = ExtraerEnlacesInternos(html, currentUri, startUri.Host);
 
-                        if (!visitadas.Contains(enlaceNormalizado))
+                        foreach (var enlace in enlaces)
                         {
-                            cola.Enqueue(enlace);
+                            string enlaceNormalizado = NormalizarUrl(enlace);
+
+                            if (!visitadas.Contains(enlaceNormalizado))
+                            {
+                                cola.Enqueue(Tuple.Create(enlace, depth + 1));
+                            }
                         }
                     }
                 }

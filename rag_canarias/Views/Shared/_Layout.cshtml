@@ -1,18 +1,49 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewBag.Title - Mi aplicación ASP.NET</title>
+    <!-- Font Awesome for high-quality icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script>
+        (function () {
+            try {
+                var isDark = false;
+                try { isDark = localStorage.getItem('darkMode') === 'true'; } catch(e) { isDark = false; }
+                if (!isDark) {
+                    // cookie fallback
+                    var m = document.cookie.match(/(?:^|;\s*)darkMode=([^;]*)/);
+                    if (m && decodeURIComponent(m[1]) === 'true') isDark = true;
+                }
+                if (isDark) {
+                    document.documentElement.classList.add('dark-mode');
+                    document.body.classList.add('dark-mode');
+                }
+            } catch (e) { }
+        })();
+    </script>
+    <style>
+        /* Critical dark-mode overrides applied early to avoid flicker
+           and ensure styles apply even if bundles or specificity conflict. */
+        html.dark-mode, html.dark-mode body {
+            background-color: #121212 !important;
+            color: #e0e0e0 !important;
+        }
+        html.dark-mode .container, html.dark-mode .body-content {
+            background: transparent !important;
+        }
+    </style>
     @Styles.Render("~/Content/css")
     @Scripts.Render("~/bundles/modernizr")
 </head>
 <body>
     <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark">
         <div class="container">
-            @Html.ActionLink("Nombre de la aplicación", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
-            <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" title="Alternar navegación" aria-controls="navbarSupportedContent"
+            @Html.ActionLink("Nombre de la aplicacion", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
+            <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                    title="Alternar navegación" aria-controls="navbarSupportedContent"
                     aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -22,6 +53,9 @@
                     <li>@Html.ActionLink("Acerca de", "About", "Home", new { area = "" }, new { @class = "nav-link" })</li>
                     <li>@Html.ActionLink("Contacto", "Contact", "Home", new { area = "" }, new { @class = "nav-link" })</li>
                 </ul>
+                <button id="dark-mode-toggle" title="Alternar modo oscuro" aria-label="Alternar modo oscuro">
+                    <i id="dm-icon" class="fa-solid fa-moon" aria-hidden="true"></i>
+                </button>
             </div>
         </div>
     </nav>
@@ -36,5 +70,75 @@
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/bootstrap")
     @RenderSection("scripts", required: false)
+    <script>
+        // Initialize after DOM ready to ensure elements exist and avoid race conditions
+        document.addEventListener('DOMContentLoaded', function () {
+            var HTML = document.documentElement;
+            var toggle = document.getElementById('dark-mode-toggle');
+            var icon = document.getElementById('dm-icon');
+
+            function setCookie(name, value) {
+                try {
+                    var exp = new Date(Date.now() + 365 * 864e5).toUTCString();
+                    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + exp + '; path=/; SameSite=Lax';
+                } catch (e) { }
+            }
+
+            function updateStorage(value) {
+                try { localStorage.setItem('darkMode', value ? 'true' : 'false'); } catch (e) { }
+                try { setCookie('darkMode', value ? 'true' : 'false'); } catch (e) { }
+            }
+
+            function applyIcon(dark) {
+                if (!icon) return;
+                if (dark) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                }
+                icon.setAttribute('aria-hidden', 'true');
+            }
+
+            function setMode(dark) {
+                if (dark) {
+                    HTML.classList.add('dark-mode');
+                    document.body.classList.add('dark-mode');
+                } else {
+                    HTML.classList.remove('dark-mode');
+                    document.body.classList.remove('dark-mode');
+                }
+                applyIcon(dark);
+                if (toggle) toggle.setAttribute('aria-pressed', dark ? 'true' : 'false');
+                updateStorage(dark);
+            }
+
+            // initialize from localStorage or cookie
+            try {
+                var saved = null;
+                try { saved = localStorage.getItem('darkMode'); } catch (e) { saved = null; }
+                if (saved === 'true' || saved === 'false') {
+                    setMode(saved === 'true');
+                } else {
+                    var m = document.cookie.match(/(?:^|;\s*)darkMode=([^;]*)/);
+                    if (m) {
+                        setMode(decodeURIComponent(m[1]) === 'true');
+                    } else {
+                        var current = HTML.classList.contains('dark-mode') || document.body.classList.contains('dark-mode');
+                        applyIcon(!!current);
+                        if (toggle) toggle.setAttribute('aria-pressed', current ? 'true' : 'false');
+                    }
+                }
+            } catch (e) { }
+
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    var nowDark = !(HTML.classList.contains('dark-mode') || document.body.classList.contains('dark-mode'));
+                    setMode(nowDark);
+                });
+            }
+        });
+    </script>
 </body>
 </html>
