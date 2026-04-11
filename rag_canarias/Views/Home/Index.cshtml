@@ -10,20 +10,33 @@
     <div>
         <label for="url">URL (opcional):</label>
         <input type="text" id="url" name="url" style="width:400px;" />
+        <small style="display: block; margin-top: 5px; color: #666;">Si está vacía, se usan URLs de prueba por defecto.</small>
     </div>
-    <div>
+
+    <div style="margin-top: 15px;">
+        <label for="carpetaGuardado">📁 Carpeta de guardado:</label>
+        <input type="text" id="carpetaGuardado" name="carpetaGuardado" style="width:400px;" placeholder="(defecto: App_Data/crawlings/)" />
+        <small style="display: block; margin-top: 5px; color: #666;">
+            Deja vacío para usar la carpeta por defecto. O introduce una ruta personalizada (relativa al proyecto, ej: <code>MisCrawls/enero2024</code>).
+        </small>
+    </div>
+
+    <div style="margin-top: 15px;">
         <label for="maxPages">MaxPages:</label>
         <input type="number" id="maxPages" name="maxPages" value="50" min="1" />
     </div>
-    <div>
+
+    <div style="margin-top: 10px;">
         <label for="maxDepth">MaxDepth:</label>
         <input type="number" id="maxDepth" name="maxDepth" value="2" min="0" />
     </div>
-    <div>
+
+    <div style="margin-top: 10px;">
         <label for="fullCrawl">FullCrawl (permitir hasta 1000 páginas):</label>
         <input type="checkbox" id="fullCrawl" name="fullCrawl" value="true" />
     </div>
-    <div>
-        <button type="submit">Iniciar crawling</button>
+
+    <div style="margin-top: 20px;">
+        <button type="submit" class="btn btn-primary">Iniciar crawling</button>
     </div>
 </form>

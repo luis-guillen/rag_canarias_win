@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Web.Mvc;
 
 namespace rag_canarias.Controllers
@@ -23,7 +24,7 @@ namespace rag_canarias.Controllers
         }
 
         [HttpPost]
-        public ActionResult Crawl(string url, int maxPages = 50, int maxDepth = 2, bool fullCrawl = false)
+        public ActionResult Crawl(string url, int maxPages = 50, int maxDepth = 2, bool fullCrawl = false, string carpetaGuardado = "")
         {
             var seeds = new List<string>
             {
@@ -45,11 +46,21 @@ namespace rag_canarias.Controllers
             maxPages = Math.Max(1, maxPages);
             maxDepth = Math.Max(0, maxDepth);
 
-            // Si FullCrawl está activo, permitimos hasta 1000 páginas como tope
-            int maxPaginasPorSitio = fullCrawl ? Math.Min(maxPages, 1000) : maxPages;
-            string carpetaBaseGlobal = @"C:\temp\crawler";
+            // Si FullCrawl está activo, usar 1000 fijo; si no, respetar maxPages
+            int maxPaginasPorSitio = fullCrawl ? 1000 : Math.Max(1, maxPages);
 
-            Directory.CreateDirectory(carpetaBaseGlobal);
+            // Resolver ruta de guardado
+            string carpetaBaseGlobal = ResolverRutaCarpeta(carpetaGuardado);
+
+            try
+            {
+                Directory.CreateDirectory(carpetaBaseGlobal);
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = $"Error al crear carpeta: {ex.Message}";
+                return View("Resultados");
+            }
 
             var resultados = new List<string>();
 
@@ -69,15 +80,18 @@ namespace rag_canarias.Controllers
 
                     int total = CrawlDomain(startUri, maxPaginasPorSitio, maxDepth, carpetaSitio);
 
-                    resultados.Add($"{startUri.Host} -> {total} páginas guardadas en {carpetaSitio}");
+                    // Mostrar ruta relativa al proyecto para mayor claridad
+                    string rutaRelativa = ObtenerRutaRelativa(carpetaSitio);
+                    resultados.Add($"✓ {startUri.Host} → {total} páginas en {rutaRelativa}");
                 }
                 catch (Exception ex)
                 {
-                    resultados.Add($"{seed} -> ERROR: {ex.Message}");
+                    resultados.Add($"✗ {seed} → ERROR: {ex.Message}");
                 }
             }
 
             ViewBag.Resultados = resultados;
+            ViewBag.CarpetaBase = ObtenerRutaRelativa(carpetaBaseGlobal);
             return View("Resultados");
         }
 
@@ -211,28 +225,81 @@ namespace rag_canarias.Controllers
             return !extensionesNoDeseadas.Any(ext => path.EndsWith(ext));
         }
 
+        private static readonly string[] _nodosBasura =
+        {
+            "script", "style", "noscript", "nav", "header", "footer", "aside", "form"
+        };
+
+        private static readonly string[] _nodosUtiles =
+        {
+            "h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "blockquote"
+        };
+
+        private static readonly string[] _patronesRuido =
+        {
+            "aviso legal", "política de privacidad", "política de cookies", "uso de cookies",
+            "contacto", "teléfono", "correo electrónico", "compartir", "enviar comentario",
+            "suscríbete", "síguenos", "redes sociales", "todos los derechos reservados",
+            "copyright", "newsletter", "iniciar sesión", "cerrar sesión", "registrar",
+            "politica de privacidad", "politica de cookies",
+            "telefono", "correo electronico",
+            "suscribete", "siguenos",
+            "iniciar sesion", "cerrar sesion"
+        };
+
         private string ExtraerTextoLimpio(string html)
         {
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
 
-            var basura = doc.DocumentNode.SelectNodes("//script|//style|//noscript");
-            if (basura != null)
+            // 1. Eliminar nodos de ruido estructural
+            var xpathBasura = string.Join("|", _nodosBasura.Select(t => "//" + t));
+            var nodosBasura = doc.DocumentNode.SelectNodes(xpathBasura);
+            if (nodosBasura != null)
             {
-                foreach (var nodo in basura)
-                {
+                // ToList() evita modificar la colección mientras se itera
+                foreach (var nodo in nodosBasura.ToList())
                     nodo.Remove();
-                }
             }
 
-            var texto = HtmlEntity.DeEntitize(doc.DocumentNode.InnerText);
+            // 2. Detectar zona de contenido principal
+            HtmlNode contenido =
+                doc.DocumentNode.SelectSingleNode("//main") ??
+                doc.DocumentNode.SelectSingleNode("//article") ??
+                doc.DocumentNode.SelectSingleNode("//body") ??
+                doc.DocumentNode;
 
-            var lineas = texto
+            // 3. Extraer sólo nodos semánticamente útiles
+            var xpathUtiles = string.Join("|", _nodosUtiles.Select(t => "descendant::" + t));
+            var nodosUtiles = contenido.SelectNodes(xpathUtiles);
+
+            if (nodosUtiles == null || nodosUtiles.Count == 0)
+            {
+                // Fallback: texto plano del contenido limpio
+                nodosUtiles = new HtmlNodeCollection(contenido) { contenido };
+            }
+
+            // 4. Construir líneas de texto
+            var sb = new StringBuilder();
+            foreach (var nodo in nodosUtiles)
+            {
+                string texto = HtmlEntity.DeEntitize(nodo.InnerText);
+                // Normalizar espacios internos
+                texto = Regex.Replace(texto, @"\s+", " ").Trim();
+
+                if (!string.IsNullOrWhiteSpace(texto))
+                    sb.AppendLine(texto);
+            }
+
+            // 5. Filtrar línea a línea
+            var líneas = sb.ToString()
                 .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(l => l.Trim())
-                .Where(l => !string.IsNullOrWhiteSpace(l));
+                .Where(l => l.Length >= 30)
+                .Where(l => !_patronesRuido.Any(p =>
+                    l.IndexOf(p, StringComparison.OrdinalIgnoreCase) >= 0));
 
-            return string.Join(Environment.NewLine, lineas);
+            return string.Join(Environment.NewLine, líneas);
         }
 
         private string GenerarNombreSeguro(Uri uri, int numero)
@@ -275,6 +342,55 @@ namespace rag_canarias.Controllers
                 nombre = nombre.Replace(c, '_');
             }
             return nombre;
+        }
+
+        /// <summary>
+        /// Resuelve la ruta de guardado. Si está vacía, usa App_Data/crawlings.
+        /// Si es una ruta relativa, la resuelve desde el raíz del proyecto.
+        /// </summary>
+        private string ResolverRutaCarpeta(string carpetaPersonalizada)
+        {
+            if (string.IsNullOrWhiteSpace(carpetaPersonalizada))
+            {
+                // Ruta por defecto: App_Data/crawlings dentro del proyecto
+                return Server.MapPath("~/App_Data/crawlings/");
+            }
+
+            // Limpiar la ruta de barras extras
+            carpetaPersonalizada = carpetaPersonalizada.Trim().Trim('/').Trim('\\');
+
+            // Si es una ruta relativa (no comienza con / ni \ ni contiene :)
+            if (!carpetaPersonalizada.Contains(":") && 
+                !carpetaPersonalizada.StartsWith("/") && 
+                !carpetaPersonalizada.StartsWith("\\"))
+            {
+                // Resolver como ruta relativa desde raíz del proyecto
+                return Server.MapPath($"~/{carpetaPersonalizada}/");
+            }
+
+            // Si es una ruta absoluta, usarla tal cual
+            return carpetaPersonalizada.EndsWith("\\") ? carpetaPersonalizada : carpetaPersonalizada + "\\";
+        }
+
+        /// <summary>
+        /// Obtiene la ruta relativa al proyecto para mostrar al usuario.
+        /// </summary>
+        private string ObtenerRutaRelativa(string rutaAbsoluta)
+        {
+            try
+            {
+                string raizProyecto = Server.MapPath("~");
+                if (rutaAbsoluta.StartsWith(raizProyecto, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Extraer ruta relativa
+                    string relativa = rutaAbsoluta.Substring(raizProyecto.Length).Trim('\\').Trim('/');
+                    return $"[Proyecto]/{relativa}";
+                }
+            }
+            catch { }
+
+            // Si no se puede determinar, devolver la ruta tal cual
+            return rutaAbsoluta;
         }
     }
 }
