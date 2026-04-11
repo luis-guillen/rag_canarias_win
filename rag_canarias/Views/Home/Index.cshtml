@@ -14,10 +14,11 @@
     </div>
 
     <div style="margin-top: 15px;">
-        <label for="carpetaGuardado">📁 Carpeta de guardado:</label>
+        <label for="carpetaGuardado"><i class="fas fa-folder"></i> Carpeta de guardado (dentro de App_Data):</label>
         <input type="text" id="carpetaGuardado" name="carpetaGuardado" style="width:400px;" placeholder="(defecto: App_Data/crawlings/)" />
         <small style="display: block; margin-top: 5px; color: #666;">
-            Deja vacío para usar la carpeta por defecto. O introduce una ruta personalizada (relativa al proyecto, ej: <code>MisCrawls/enero2024</code>).
+            Deja vacío para usar <strong>App_Data/crawlings</strong>, o introduce un nombre de subcarpeta (ej: <code>MisCrawls</code>, <code>enero2024</code>, etc). 
+            <br/><i class="fas fa-check-circle" style="color: #4caf50;"></i> Las carpetas siempre se crean dentro de <strong>App_Data</strong> por seguridad.
         </small>
     </div>
 

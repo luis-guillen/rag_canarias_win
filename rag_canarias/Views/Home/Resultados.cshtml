@@ -5,21 +5,35 @@
     var error = ViewBag.Error as string;
 }
 
-<h2>📊 Resultados del Crawling</h2>
+<h2><i class="fas fa-chart-bar"></i> Resultados del Crawling</h2>
 
 @if (!string.IsNullOrWhiteSpace(error))
 {
-    <div style="background-color: #ffebee; border: 1px solid #f44336; padding: 15px; margin-bottom: 20px; border-radius: 4px; color: #c62828;">
-        <strong>⚠️ Error:</strong> @error
+    <div style="background-color: #ffebee; border: 1px solid #f44336; padding: 20px; margin-bottom: 20px; border-radius: 4px; color: #c62828;">
+        <strong><i class="fas fa-exclamation-triangle"></i> Error encontrado:</strong>
+        <p style="margin-top: 10px; font-family: monospace; background-color: #fff9c4; padding: 10px; border-radius: 3px; color: #f57f17;">
+            @Html.Raw(error.Replace("\n", "<br/>"))
+        </p>
+        <p style="margin-top: 10px; font-size: 0.9em;">
+            <strong>Soluciones sugeridas:</strong><br/>
+            1. Deja el campo "Carpeta de guardado" <strong>VACÍO</strong> para usar <code>App_Data/crawlings</code><br/>
+            2. O introduce un <strong>nombre de subcarpeta</strong> simple (ej: <code>MisCrawls</code>, <code>enero</code>, sin caracteres especiales)<br/>
+            3. <i class="fas fa-info-circle"></i> Nota: Las carpetas SIEMPRE se crean dentro de <code>App_Data</code> por seguridad. No se permiten rutas absolutas.<br/>
+            4. Verifica que tu usuario tiene permisos de escritura en <code>App_Data</code><br/>
+            5. En Windows, ejecuta Visual Studio como Administrador si los permisos siguen siendo un problema
+        </p>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <a href="/Home/Index" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Volver al formulario</a>
     </div>
 }
-
-@if (resultados != null && resultados.Count > 0)
+else if (resultados != null && resultados.Count > 0)
 {
-    @if (!string.IsNullOrWhiteSpace(carpetaBase))
+    if (!string.IsNullOrWhiteSpace(carpetaBase))
     {
         <div style="background-color: #e3f2fd; border: 1px solid #2196f3; padding: 15px; margin-bottom: 20px; border-radius: 4px; color: #1565c0;">
-            <strong>📁 Carpeta base:</strong> <code>@carpetaBase</code>
+            <strong><i class="fas fa-folder-open"></i> Carpeta base:</strong> <code>@carpetaBase</code>
         </div>
     }
 
@@ -34,12 +48,15 @@
             }
         </ul>
     </div>
+
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+        <a href="/Home/Index" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Volver al formulario</a>
+    </div>
 }
 else
 {
     <p>No hay resultados.</p>
+    <div style="margin-top: 20px;">
+        <a href="/Home/Index" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Volver al formulario</a>
+    </div>
 }
-
-<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-    <a href="/Home/Index" class="btn btn-primary">← Volver al formulario</a>
-</div>

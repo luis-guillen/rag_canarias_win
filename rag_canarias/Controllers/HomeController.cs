@@ -54,11 +54,28 @@ namespace rag_canarias.Controllers
 
             try
             {
-                Directory.CreateDirectory(carpetaBaseGlobal);
+                // Intentar crear la carpeta
+                DirectoryInfo dirInfo = Directory.CreateDirectory(carpetaBaseGlobal);
+
+                // Verificar que la carpeta se creó correctamente
+                if (!Directory.Exists(carpetaBaseGlobal))
+                {
+                    throw new Exception($"La carpeta no se pudo crear. Verifica permisos: {carpetaBaseGlobal}");
+                }
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                ViewBag.Error = $"⚠️ Permiso denegado. No tienes permisos de escritura en: {carpetaBaseGlobal}. Detalles: {ex.Message}";
+                return View("Resultados");
+            }
+            catch (ArgumentException ex)
+            {
+                ViewBag.Error = $"⚠️ Ruta inválida. Verifica que la carpeta sea válida: {carpetaGuardado}. Detalles: {ex.Message}";
+                return View("Resultados");
             }
             catch (Exception ex)
             {
-                ViewBag.Error = $"Error al crear carpeta: {ex.Message}";
+                ViewBag.Error = $"⚠️ Error al crear carpeta: {ex.Message}. Intenta con una ruta diferente o deja vacío para usar la carpeta por defecto.";
                 return View("Resultados");
             }
 
@@ -345,31 +362,51 @@ namespace rag_canarias.Controllers
         }
 
         /// <summary>
-        /// Resuelve la ruta de guardado. Si está vacía, usa App_Data/crawlings.
-        /// Si es una ruta relativa, la resuelve desde el raíz del proyecto.
+        /// Resuelve la ruta de guardado. SIEMPRE crea carpetas dentro de App_Data por seguridad.
+        /// - Si está vacía → usa App_Data/crawlings/
+        /// - Si no está vacía → valida que sea solo un nombre de carpeta (sin barras ni rutas absolutas)
+        ///   y la crea dentro de App_Data/
         /// </summary>
         private string ResolverRutaCarpeta(string carpetaPersonalizada)
         {
-            if (string.IsNullOrWhiteSpace(carpetaPersonalizada))
+            try
             {
-                // Ruta por defecto: App_Data/crawlings dentro del proyecto
+                string appDataBase = Server.MapPath("~/App_Data/");
+
+                if (string.IsNullOrWhiteSpace(carpetaPersonalizada))
+                {
+                    // Ruta por defecto: App_Data/crawlings/
+                    string rutaPorDefecto = Path.Combine(appDataBase, "crawlings") + "\\";
+                    return rutaPorDefecto;
+                }
+
+                // Limpiar y validar: solo permitir nombres de carpeta (sin rutas)
+                carpetaPersonalizada = carpetaPersonalizada.Trim().Trim('/').Trim('\\');
+
+                // Rechazar intentos de ruta absoluta o salida de App_Data
+                if (carpetaPersonalizada.Contains(":") ||
+                    carpetaPersonalizada.StartsWith("\\") ||
+                    carpetaPersonalizada.StartsWith("/") ||
+                    carpetaPersonalizada.Contains("..") ||
+                    carpetaPersonalizada.Contains(@"\..\") ||
+                    carpetaPersonalizada.Contains("/../"))
+                {
+                    throw new ArgumentException("La carpeta debe ser un nombre simple sin rutas. Ej: 'MisCrawls', 'enero', etc.");
+                }
+
+                // Crear dentro de App_Data
+                string rutaFinal = Path.Combine(appDataBase, carpetaPersonalizada) + "\\";
+                return rutaFinal;
+            }
+            catch (ArgumentException)
+            {
+                throw;
+            }
+            catch
+            {
+                // Fallback: usar App_Data/crawlings si hay error
                 return Server.MapPath("~/App_Data/crawlings/");
             }
-
-            // Limpiar la ruta de barras extras
-            carpetaPersonalizada = carpetaPersonalizada.Trim().Trim('/').Trim('\\');
-
-            // Si es una ruta relativa (no comienza con / ni \ ni contiene :)
-            if (!carpetaPersonalizada.Contains(":") && 
-                !carpetaPersonalizada.StartsWith("/") && 
-                !carpetaPersonalizada.StartsWith("\\"))
-            {
-                // Resolver como ruta relativa desde raíz del proyecto
-                return Server.MapPath($"~/{carpetaPersonalizada}/");
-            }
-
-            // Si es una ruta absoluta, usarla tal cual
-            return carpetaPersonalizada.EndsWith("\\") ? carpetaPersonalizada : carpetaPersonalizada + "\\";
         }
 
         /// <summary>
