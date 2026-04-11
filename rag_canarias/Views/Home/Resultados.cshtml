@@ -1,0 +1,22 @@
+﻿@{
+    ViewBag.Title = "Resultados";
+    var resultados = ViewBag.Resultados as List<string>;
+}
+
+<h2>Resultados del crawling</h2>
+
+@if (resultados != null && resultados.Count > 0)
+{
+    <ul>
+        @foreach (var item in resultados)
+        {
+            <li>@item</li>
+        }
+    </ul>
+}
+else
+{
+    <p>No hay resultados.</p>
+}
+
+<p><a href="/Home/Index">Volver</a></p>
