@@ -20,11 +20,6 @@
 - [Uso y Configuración](#-uso-y-configuración)
 - [Características Principales](#-características-principales)
 - [Estructura del Proyecto](#-estructura-del-proyecto)
-- [Consideraciones Importantes](#-consideraciones-importantes)
-- [Mejoras Futuras](#-mejoras-futuras)
-- [Preguntas Frecuentes](#-preguntas-frecuentes)
-- [Contacto](#-contacto)
-
 ---
 
 ## 📖 Descripción
