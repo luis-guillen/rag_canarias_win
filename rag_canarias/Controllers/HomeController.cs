@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using System.Web.Mvc;
-using System.Threading.Tasks;
-using System.Net.Http;
+﻿using HtmlAgilityPack;
+using System;
 using System.IO;
+using System.Net.Http;
+using System.Text;
+using System.Web.Mvc;
 
 namespace rag_canarias.Controllers
 {
@@ -16,45 +14,71 @@ namespace rag_canarias.Controllers
             return View();
         }
 
-        public ActionResult About()
-        {
-            ViewBag.Message = "Your application description page.";
-
-            return View();
-        }
-
-        public ActionResult Contact()
-        {
-            ViewBag.Message = "Your contact page.";
-
-            return View();
-        }
-
         [HttpPost]
-        public async Task<ActionResult> Crawl(string url)
+        public ActionResult Crawl(string url)
         {
             if (string.IsNullOrWhiteSpace(url))
             {
                 return Content("URL vacía");
             }
 
+            if (!Uri.TryCreate(url, UriKind.Absolute, out Uri uri))
+            {
+                return Content("URL no válida");
+            }
+
             try
             {
                 using (var client = new HttpClient())
                 {
-                    var html = await client.GetStringAsync(url).ConfigureAwait(false);
+                    var html = client.GetStringAsync(url).Result;
+                    var textoLimpio = ExtraerTextoLimpio(html);
 
-                    // Asegurar que la carpeta exista
-                    System.IO.Directory.CreateDirectory(@"C:\temp");
-                    System.IO.File.WriteAllText(@"C:\temp\pagina.txt", html);
+                    var carpeta = @"C:\temp";
+                    Directory.CreateDirectory(carpeta);
 
-                    return Content("Página descargada y guardada en C:\\temp\\pagina.txt");
+                    var rutaArchivo = Path.Combine(carpeta, "pagina_limpia.txt");
+                    System.IO.File.WriteAllText(rutaArchivo, textoLimpio, Encoding.UTF8);
+
+                    return Content("Texto limpio guardado en: " + rutaArchivo);
                 }
             }
             catch (Exception ex)
             {
                 return Content("Error: " + ex.Message);
             }
+        }
+
+        private string ExtraerTextoLimpio(string html)
+        {
+            var doc = new HtmlDocument();
+            doc.LoadHtml(html);
+
+            var basura = doc.DocumentNode.SelectNodes("//script|//style|//noscript");
+            if (basura != null)
+            {
+                foreach (var nodo in basura)
+                {
+                    nodo.Remove();
+                }
+            }
+
+            var texto = HtmlEntity.DeEntitize(doc.DocumentNode.InnerText);
+
+            var lineas = texto
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            var sb = new StringBuilder();
+            foreach (var linea in lineas)
+            {
+                var limpia = linea.Trim();
+                if (!string.IsNullOrWhiteSpace(limpia))
+                {
+                    sb.AppendLine(limpia);
+                }
+            }
+
+            return sb.ToString();
         }
     }
 }
