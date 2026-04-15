@@ -11,6 +11,27 @@
 
 ---
 
+## 🔄 ¿Necesitas usar esto en Web Forms?
+
+**Tenemos los componentes extraídos y listos para reutilizar:**
+
+📦 **Componentes portables** en carpeta `Services/`:
+- `CrawlerService.cs` - Motor del crawler (agnóstico a MVC/Web Forms)
+- `PathHelper.cs` - Validador de rutas robusto
+
+📖 **Guías de migración:**
+- 📄 [`PASOS_PARA_WEBFORMS.md`](PASOS_PARA_WEBFORMS.md) - Checklist paso a paso
+- 📄 [`GUIA_WEBFORMS.md`](GUIA_WEBFORMS.md) - Ejemplos completos de código
+- 📄 [`EXTRACCION_COMPONENTES.md`](EXTRACCION_COMPONENTES.md) - Detalles técnicos
+
+**Qué necesitas:**
+1. Copiar `Services/CrawlerService.cs` y `Services/PathHelper.cs`
+2. Instalar NuGet: `HtmlAgilityPack`
+3. Crear tu formulario `.aspx` y code-behind
+4. ¡Listo! El crawler funciona idéntico en Web Forms
+
+---
+
 ## 📋 Tabla de Contenidos
 
 - [Descripción](#-descripción)
